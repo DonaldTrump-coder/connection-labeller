@@ -1,6 +1,6 @@
 from PyQt6.QtWidgets import QGraphicsScene, QGraphicsView, QGraphicsEllipseItem, QGraphicsPixmapItem
 from PyQt6.QtGui import QPen, QColor, QImage, QPixmap, QPainter
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QLineF
 from enum import Enum, auto
 import base64
 import numpy as np
@@ -133,6 +133,7 @@ class Canvas(QGraphicsView):
         self.scene.addItem(ghost)
         
     def load_json(self, json_data):
+        self.clear_canvas()
         image = None
         self.json_data = json_data
         
@@ -144,7 +145,6 @@ class Canvas(QGraphicsView):
             self.show_image(image=image)
         
         # load polygons
-        self.polygons = []
         for shape in json_data['shapes']:
             if shape['shape_type'] == 'polygon':
                 points = np.array(shape['points'], dtype=float) # points list
@@ -170,7 +170,7 @@ class Canvas(QGraphicsView):
     def find_nearest_point(self, pos, threshold=10):
         for p in self.points:
             p_pos = p.center_pos()
-            dist = (p_pos - pos).manhattanLength()
+            dist = QLineF(p_pos, pos).length()
             if dist < threshold:
                 return p
         return None
@@ -220,6 +220,16 @@ class Canvas(QGraphicsView):
             self.edges.remove(edge)
 
         self.scene.removeItem(edge)
+        
+    def clear_canvas(self):
+        self.scene.clear()
+        self.image_item = None
+        self.polygons = []
+        self.points = []
+        self.edges = []
+        self.selected_point = None
+        self.temp_line = None
+        self.start_point = None
     
     def mousePressEvent(self, event):
         if self.mode == CanvasMode.Connect:
@@ -273,14 +283,21 @@ class Canvas(QGraphicsView):
                 self.temp_line = None
 
             if end_point and end_point != self.start_point:
-                edge = Edge(self.start_point, end_point)
-                self.scene.addItem(edge)
-                self.edges.append(edge)
+                if not self.edge_exists(self.start_point, end_point):
+                    edge = Edge(self.start_point, end_point)
+                    self.scene.addItem(edge)
+                    self.edges.append(edge)
 
             self.start_point = None
             return
 
         super().mouseReleaseEvent(event)
+        
+    def edge_exists(self, p1, p2):
+        for e in self.edges:
+            if (e.p1 == p1 and e.p2 == p2) or (e.p1 == p2 and e.p2 == p1):
+                return True
+        return False
         
     def save(self):
         for idx, shape in enumerate(self.json_data["shapes"]):
