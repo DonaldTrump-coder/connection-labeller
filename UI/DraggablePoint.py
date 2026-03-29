@@ -1,4 +1,4 @@
-from PyQt6.QtWidgets import QGraphicsEllipseItem, QGraphicsLineItem
+from PyQt6.QtWidgets import QGraphicsEllipseItem, QGraphicsLineItem, QGraphicsItem
 from PyQt6.QtGui import QColor, QPen
 from PyQt6.QtCore import QPointF
 
@@ -21,6 +21,22 @@ class DraggablePoint(QGraphicsEllipseItem):
     
     def itemChange(self, change, value):
         from UI.canvas import CanvasMode
+        if change == QGraphicsItem.GraphicsItemChange.ItemPositionChange:
+            scene_rect = self.scene().sceneRect()
+            
+            radius = self.rect().width() / 2
+            
+            new_pos = value
+
+            x = min(max(new_pos.x() + self.old_pos.x(), scene_rect.left()),
+                    scene_rect.right())
+            y = min(max(new_pos.y() + self.old_pos.y(), scene_rect.top()),
+                    scene_rect.bottom())
+
+            corrected_pos = QPointF(x - self.old_pos.x(), y - self.old_pos.y())
+
+            return corrected_pos
+        
         if change == QGraphicsEllipseItem.GraphicsItemChange.ItemPositionHasChanged:
             if self.canvas.mode == CanvasMode.Move:
                 new_pos = self.center_pos()

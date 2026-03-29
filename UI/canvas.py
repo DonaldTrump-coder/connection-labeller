@@ -99,6 +99,7 @@ class Canvas(QGraphicsView):
         pixmap = QPixmap.fromImage(qimg)
         self.image_item = QGraphicsPixmapItem(pixmap)
         self.scene.addItem(self.image_item)
+        self.scene.setSceneRect(0, 0, w, h)
         
     def get_image_scene_rect(self):
         return self.image_item.mapToScene(
@@ -162,6 +163,7 @@ class Canvas(QGraphicsView):
                                              )
                                      )
         self.draw_polygons()
+        self.fitInView(self.scene.sceneRect(), Qt.AspectRatioMode.KeepAspectRatio)
         
     def resizeEvent(self, event):
         super().resizeEvent(event)
@@ -304,6 +306,11 @@ class Canvas(QGraphicsView):
             shape["dx"] = self.polygons[idx].dx
             shape["dy"] = self.polygons[idx].dy
         connections = []
+        if not self.edges:
+            return "No connections!"
+        for p in self.points:
+            if not p.edges:
+                return "Isolated point found!"
         for e in self.edges:
             i = self.points.index(e.p1)
             j = self.points.index(e.p2)
