@@ -24,8 +24,6 @@ class DraggablePoint(QGraphicsEllipseItem):
         if change == QGraphicsItem.GraphicsItemChange.ItemPositionChange:
             scene_rect = self.scene().sceneRect()
             
-            radius = self.rect().width() / 2
-            
             new_pos = value
 
             x = min(max(new_pos.x() + self.old_pos.x(), scene_rect.left()),

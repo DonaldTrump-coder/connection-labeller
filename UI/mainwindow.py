@@ -1,4 +1,4 @@
-from PyQt6.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QPushButton, QFileDialog, QMessageBox
+from PyQt6.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QPushButton, QFileDialog, QMessageBox, QStatusBar
 from UI.canvas import Canvas, CanvasMode
 import json
 import os
@@ -20,8 +20,12 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.tool_panel)
         layout.addWidget(self.canvas)
         
+        self.status = QStatusBar()
+        self.setStatusBar(self.status)
+        
         self.json_files = []
         self.index = 0
+        self.update_status()
         
         self.saved = False
         
@@ -87,11 +91,13 @@ class MainWindow(QMainWindow):
         
         num_files = len(self.json_files)
         if num_files == 0:
+            QMessageBox.warning(self, "Warning", "No JSON files found in the folder!")
             return
         with open(self.json_files[self.index], 'r', encoding='utf-8') as f:
             data = json.load(f)
         self.canvas.load_json(data)
         self.saved = False
+        self.update_status()
         
     def load_next(self):
         if not self.json_files:
@@ -102,11 +108,13 @@ class MainWindow(QMainWindow):
         if self.index < len(self.json_files) - 1:
             self.index += 1
         else:
+            QMessageBox.warning(self, "Warning", "No more files!")
             return
         with open(self.json_files[self.index], 'r', encoding='utf-8') as f:
             data = json.load(f)
         self.canvas.load_json(data)
         self.saved = False
+        self.update_status()
         
     def load_last(self):
         if not self.json_files:
@@ -117,11 +125,13 @@ class MainWindow(QMainWindow):
         if self.index > 0:
             self.index -= 1
         else:
+            QMessageBox.warning(self, "Warning", "No previous files!")
             return
         with open(self.json_files[self.index], 'r', encoding='utf-8') as f:
             data = json.load(f)
         self.canvas.load_json(data)
         self.saved = False
+        self.update_status()
     
     def load_json(self):
         if self.canvas.edges and self.saved is False:
@@ -135,7 +145,17 @@ class MainWindow(QMainWindow):
                 data = json.load(f)
             self.canvas.load_json(data)
             self.saved = False
+            self.update_status()
             
+    def update_status(self):
+        if not self.json_files:
+            text = f"Label 0 / 0"
+        else:
+            total = len(self.json_files)
+            if self.index < total:
+                text = f"Label {self.index + 1} / {total}"
+        self.status.showMessage(text)
+        
     def save(self):
         if not self.json_files:
             return
